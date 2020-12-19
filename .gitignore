@@ -1,0 +1,13 @@
+*/build/
+
+#CLion
+*/.idea/
+*/cmake-build-debug/
+*/cmake-build-release/
+
+#Visual Studio
+*/.vs/
+*/CMakeSettings.json
+
+#Qt Creator
+*/CMakeLists.txt.user
