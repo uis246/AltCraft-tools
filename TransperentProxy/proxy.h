@@ -31,3 +31,6 @@ void free_context(context* ctx);
 context* find_context(int fd);
 
 void* proxy_connection(void *ctx);
+
+int8_t VarIntToUint(const uint8_t *varint, uint32_t *result, uint8_t maxlen);
+void prepare_disconnect_buffer(uint8_t *restrict buffer, const char *restrict reason, const uint8_t strlen);
