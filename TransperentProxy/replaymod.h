@@ -7,7 +7,7 @@
 struct replay_context {
 	int replayfileFD;
 	int replayinfoFD;
-	struct timeval startTime;
+	struct timeval startTime;//msecs in tv_usec
 };
 
 struct context;

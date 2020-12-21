@@ -28,6 +28,9 @@ context* allocate_context() {
 }
 
 void free_context(context* ctx) {
+	//Close replay
+	replay_free_context(ctx);
+
 	//Free memory
 	if(ctx->serveraddr)
 		free(ctx->serveraddr);

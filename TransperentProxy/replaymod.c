@@ -40,6 +40,7 @@ void replay_init_context(struct context *ctx, const char *restrict version/*, co
 	}
 
 	gettimeofday(&ctx->replay.startTime, NULL);//Can fail on linux with EFAULT
+	ctx->replay.startTime.tv_usec/=1000;
 
 //	uint32_t buf32[2] = {0, htobe32(len)};
 //	write(ctx->replay.replayfileFD, buf32, 2*4);
@@ -51,8 +52,10 @@ void replay_free_context(struct context *ctx) {
 	if(ctx->replay.replayfileFD == -1)
 		return;
 	close(ctx->replay.replayfileFD);
+	ctx->replay.replayfileFD = -1;
 	if(ctx->replay.replayinfoFD != -1) {
 		close(ctx->replay.replayinfoFD);
+		ctx->replay.replayinfoFD = -1;
 	}
 }
 
@@ -64,7 +67,7 @@ void replay_write_packet(struct context *ctx, const uint8_t *restrict buffer, ui
 	gettimeofday(&now, NULL);
 
 	time_t seconddiff = now.tv_sec - ctx->replay.startTime.tv_sec;
-	suseconds_t diff = now.tv_usec - ctx->replay.startTime.tv_usec;
+	long diff = now.tv_usec/1000 - ctx->replay.startTime.tv_usec;//msecs in tv_usec
 	if(diff < 0) {
 		seconddiff--;
 		diff+=1000;
