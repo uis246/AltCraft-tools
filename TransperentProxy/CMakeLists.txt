@@ -13,3 +13,7 @@ add_executable(TransperentProxy ${SOURCES} ${HEADERS})
 
 find_package(Threads REQUIRED)
 target_link_libraries(TransperentProxy Threads::Threads)
+
+find_package(ZLIB REQUIRED)
+target_link_libraries(TransperentProxy ${ZLIB_LIBRARIES})
+target_include_directories(TransperentProxy PUBLIC ${ZLIB_INCLUDE_DIRS})
