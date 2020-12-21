@@ -71,7 +71,7 @@ int8_t VarIntToUint(const uint8_t *varint, uint32_t *result, uint8_t maxlen){
 		if(i>5)
 			return -1;
 		if(i>=maxlen)
-			return -1;
+			return 0;
 		*result |= (uint32_t)(varint[i]&0x7F) << (i*7);
 	}while((varint[i++]&0x80) != 0);
 	return (int8_t)i;

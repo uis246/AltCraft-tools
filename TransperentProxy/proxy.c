@@ -36,8 +36,10 @@ static int read_packet(struct pktbuf *buf, int fd) {
 		buf->lenleft-=ret;
 		uint32_t len;
 		ret=VarIntToUint(buf->buffer, &len, 5-buf->lenleft);
-		if(ret==-1)//FIXME: split wait for buffer and failed to parse
-			return -1;//Not enough readed bytes, I think
+		if(ret == 0)
+			return -1;//Not enough readed bytes
+		else if(ret == -1)
+			return -3;//Failed to parse
 		len+=(uint32_t)ret;
 
 		if(len > buf->size) {
