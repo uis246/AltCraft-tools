@@ -70,6 +70,8 @@ int main() {
 			ctx->clientState=Handshake;
 			ctx->serverState=Handshake;
 			ctx->trxld=-1;
+			ctx->replay.replayfileFD=-1;
+			ctx->replay.replayinfoFD=-1;
 
 			retval=pthread_create(&ctx->thread, &attribute, proxy_connection, ctx);
 			if(retval==-1) {

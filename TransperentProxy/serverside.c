@@ -14,6 +14,8 @@ int server_packet_handler(HANDLER_ARGS) {
 			ctx->clientState = Play;
 			ctx->serverState = Play;
 		}
+	} else if(ctx->clientState == Play) {
+		replay_write_packet(ctx, buffer, len);
 	}
 
 	return 0;

@@ -16,7 +16,7 @@ int client_packet_handler(HANDLER_ARGS) {
 	int ret;
 	uint32_t current=0, parsedint;
 
-	ret=VarIntToUint(buffer + current, &parsedint, (uint8_t)(len - current));
+	ret=VarIntToUint(buffer + current, &parsedint, (uint8_t)len);
 	current+=(uint32_t)ret;
 
 	if(ctx->clientState == Handshake) {
@@ -109,6 +109,10 @@ int client_packet_handler(HANDLER_ARGS) {
 
 			freeaddrinfo(ai);
 			ctx->serverState = ctx->clientState;
+
+			//Init replay
+			if(id != -1)
+				replay_init_context(ctx, protocolId_version[id].strptr/*, buffer, len*/);
 
 			return 1;
 		} else {

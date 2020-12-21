@@ -1,5 +1,7 @@
 #pragma once
 
+#include "replaymod.h"
+
 #include <stdint.h>
 #include <pthread.h>
 
@@ -15,8 +17,9 @@ enum ConnectionState {
 	Play=3
 };
 
-typedef struct {
-	char *serveraddr;
+typedef struct context {
+	char *restrict serveraddr;
+	struct replay_context replay;
 	uint32_t protocol_version;
 	pthread_t thread;
 	int32_t trxld;
