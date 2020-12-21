@@ -9,7 +9,7 @@
 
 #include <endian.h>
 
-static const char json_format[]="{\"singleplayer\":false,\"fileFormat\":\"MCPR\",\"fileFormatVersion\":9,\"generator\":\"ACTools proxy\",\"selfId\":-1,"
+static const char json_format[]="{\"singleplayer\":false,\"fileFormat\":\"MCPR\",\"fileFormatVersion\":9,\"generator\":\"ACTools proxy\",\"selfId\":-1,\"players\":[],"
 				"\"serverName\":\"%s\","
 //				"\"duration\":%u,"
 				"\"date\":%lu,"
@@ -21,7 +21,7 @@ void replay_init_context(struct context *ctx, const char *restrict version/*, co
 	char buf[32];
 	time_t t = time(NULL);
 	struct tm *tm = localtime(&t);
-	sprintf(buf, "%02d.%02d.%d_%02d:%02d", tm->tm_mday, tm->tm_mon + 1, tm->tm_year + 1900, tm->tm_hour, tm->tm_min);
+	sprintf(buf, "%d_%02d_%02d_%02d_%02d_%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
 	mkdir(buf, S_IRWXU);
 
 	int dirfd=open(buf, O_DIRECTORY);
@@ -41,12 +41,13 @@ void replay_init_context(struct context *ctx, const char *restrict version/*, co
 
 	gettimeofday(&ctx->replay.startTime, NULL);//Can fail on linux with EFAULT
 	ctx->replay.startTime.tv_usec/=1000;
+	ctx->replay.startTime.tv_usec+=ctx->replay.startTime.tv_sec*1000;
 
 //	uint32_t buf32[2] = {0, htobe32(len)};
 //	write(ctx->replay.replayfileFD, buf32, 2*4);
 //	write(ctx->replay.replayfileFD, buffer, len);
 
-	dprintf(ctx->replay.replayinfoFD, json_format, "127.0.0.1", ctx->replay.startTime.tv_sec, version);
+	dprintf(ctx->replay.replayinfoFD, json_format, "127.0.0.1", ctx->replay.startTime.tv_usec, version);
 }
 void replay_free_context(struct context *ctx) {
 	if(ctx->replay.replayfileFD == -1)
@@ -66,14 +67,9 @@ void replay_write_packet(struct context *ctx, const uint8_t *restrict buffer, ui
 	struct timeval now;
 	gettimeofday(&now, NULL);
 
-	time_t seconddiff = now.tv_sec - ctx->replay.startTime.tv_sec;
-	long diff = now.tv_usec/1000 - ctx->replay.startTime.tv_usec;//msecs in tv_usec
-	if(diff < 0) {
-		seconddiff--;
-		diff+=1000;
-	}
+	long diff = now.tv_usec/1000 + now.tv_sec*1000 - ctx->replay.startTime.tv_usec;//msecs in tv_usec
 
-	uint32_t buf[2] = {htobe32(seconddiff*1000 + diff), htobe32(len)};
+	uint32_t buf[2] = {htobe32(diff), htobe32(len)};
 
 	write(ctx->replay.replayfileFD, buf, 2*4);
 	write(ctx->replay.replayfileFD, buffer, len);
