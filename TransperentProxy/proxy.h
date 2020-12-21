@@ -19,6 +19,7 @@ typedef struct {
 	char *serveraddr;
 	uint32_t protocol_version;
 	pthread_t thread;
+	int32_t trxld;
 	int client_fd/*Our fd*/, server_fd/*Destination fd*/;
 	uint16_t port;
 	enum ConnectionState clientState, serverState;
