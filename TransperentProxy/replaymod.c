@@ -8,6 +8,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/socket.h>
+#include <sys/uio.h>
 
 #include <endian.h>
 
@@ -29,7 +31,7 @@ void replay_init_context(struct context *ctx, const char *restrict version/*, co
 
 	int dirfd=open(buf, O_DIRECTORY);
 
-	ctx->replay.replayfileFD=openat(dirfd, "recording.tmcpr", O_CREAT|O_CLOEXEC|O_WRONLY, S_IREAD|S_IWRITE);
+	ctx->replay.replayfileFD=openat(dirfd, "recording.tmcpr", O_CREAT|O_CLOEXEC|O_WRONLY|O_NONBLOCK, S_IREAD|S_IWRITE);
 	ctx->replay.replayinfoFD=openat(dirfd, "metaData.json", O_CREAT|O_CLOEXEC|O_WRONLY, S_IREAD|S_IWRITE);
 
 	if(ctx->replay.replayfileFD == -1 || ctx->replay.replayinfoFD == -1) {
@@ -42,14 +44,20 @@ void replay_init_context(struct context *ctx, const char *restrict version/*, co
 		return;
 	}
 
+//	fcntl(ctx->replay.replayfileFD, F_SETFL, fcntl(ctx->replay.replayfileFD, F_GETFL) | O_NONBLOCK);
+
 	gettimeofday(&ctx->replay.startTime, NULL);//Can fail on linux with EFAULT
 	ctx->replay.startTime.tv_usec/=1000;
 	ctx->replay.startTime.tv_usec+=ctx->replay.startTime.tv_sec*1000;
 
 	ctx->replay.versionName = version;
-	ctx->replay.UUIDs = malloc(1*sizeof(uint8_t*));
-	ctx->replay.UUIDs[0] = malloc(37);
-	ctx->replay.uuidcount = 1;
+	ctx->replay.UUIDs = malloc(4*sizeof(uint8_t*));
+	void *ptr = malloc(4*37);
+	ctx->replay.UUIDs[0] = ptr;
+	ctx->replay.UUIDs[1] = ptr+37;
+	ctx->replay.UUIDs[2] = ptr+(2*37);
+	ctx->replay.UUIDs[3] = ptr+(3*37);
+	ctx->replay.uuidcount = 4;
 	ctx->replay.uuidused = 0;
 }
 void replay_free_context(struct context *ctx) {
@@ -63,7 +71,7 @@ void replay_free_context(struct context *ctx) {
 		uint32_t diff = (uint32_t)(now.tv_usec/1000 + now.tv_sec*1000 - ctx->replay.startTime.tv_usec);//msecs in tv_usec
 
 		dprintf(ctx->replay.replayinfoFD, json_format, "127.0.0.1", ctx->replay.startTime.tv_usec, diff, ctx->replay.versionName);
-		for(uint8_t i = 0; i < ctx->replay.uuidused; i++) {
+		for(uint8_t i = 0; i < ctx->replay.uuidcount; i++) {
 			if(i)
 				dprintf(ctx->replay.replayinfoFD, ",");
 			dprintf(ctx->replay.replayinfoFD, "\"%s\"", ctx->replay.UUIDs[i]);
@@ -85,8 +93,9 @@ void replay_write_packet(struct context *ctx, const uint8_t *restrict buffer, ui
 
 	uint32_t buf[2] = {htobe32(diff), htobe32(len)};
 
-	write(ctx->replay.replayfileFD, buf, 2*4);
-	write(ctx->replay.replayfileFD, buffer, len);
+	struct iovec iv[2]={{buf, 2*4}, {(void*)buffer, len}};
+	if(writev(ctx->replay.replayfileFD, iv, 2) == -1)
+		perror("writev() failed");
 }
 
 void replay_add_uuid(struct context *ctx, const uint8_t *restrict buffer) {
