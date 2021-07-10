@@ -64,7 +64,7 @@ int main(int argc, char **argv) {
 		goto destroy;
 	}
 
-	uint16_t _Alignas(8 * sizeof(uint16_t)) *buf;
+	uint16_t *buf __attribute__((aligned(8 * sizeof(uint16_t))));
 
 	png_bytep u8buf;
 	{
@@ -122,17 +122,14 @@ int main(int argc, char **argv) {
 		for(uint32_t ly = 0; ly < dy; ly++) {
 			for(uint32_t lx = 0; lx < dx; lx++) {
 			//Third: mid-4
-				//printf("{%u,%u}, %u\n", lx, ly, (ly * x * 4 * 2) + lx * 4 * 2);
 				uint16x8_t v00_01;
-				{
-					uint16x8_t v10_11;
-					v00_01 = vld1q_u16(&buf[(ly * x * 4 * 2) + lx * 4 * 2]);
-					v10_11 = vld1q_u16(&buf[(ly * x * 4 * 2) + lx * 4 * 2 + (x * 4)]);
-					v00_01 = vhaddq_u16(v00_01, v10_11);
-				}
+				uint16x8_t v10_11;
+				v00_01 = vld1q_u16(&buf[(ly * x * 4 * 2) + lx * 4 * 2]);
+				v10_11 = vld1q_u16(&buf[(ly * x * 4 * 2) + lx * 4 * 2 + (x * 4)]);
+				v00_01 = vhaddq_u16(v00_01, v10_11);
+
 				uint16x4_t store;
 				store = vhadd_u16(vget_high_u16(v00_01), vget_low_u16(v00_01));
-				
 				vst1_u16(&buf[(ly * dx * 4) + (lx * 4)], store);
 			}
 		}
@@ -175,7 +172,6 @@ int main(int argc, char **argv) {
 		}
 		{
 			mask[slen-3] = '0' + level + 1;
-			printf("%s\n", mask);
 			f = fopen(mask, "wb");
 			if(!f) {
 				fprintf(stderr, "Failed to open file \"%s\"", mask);
@@ -208,21 +204,14 @@ int main(int argc, char **argv) {
 				PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_DEFAULT);
 
 			png_write_info(ptr, info);
-			printf("Info done: %u %u\n", x, y);
 
 			png_bytep *row_pointers = (png_bytep*) malloc(sizeof(png_bytep) * y);
-			for(uint32_t i = 0; i < y; i++) {
+			for(uint32_t i = 0; i < y; i++)
 				row_pointers[i] = &u8buf[i * x * 4];
-				//printf("%u ", row_pointers[i] - sbuf);
-			}
-			//printf("\n");
 			png_write_image(ptr, row_pointers);
-			//png_write_rows(ptr, row_pointers, dy);
-			printf("Write done\n");
 			free(row_pointers);
 
 			png_write_end(ptr, info);
-			printf("End\n");
 
 			fclose(f);
 			f = NULL;

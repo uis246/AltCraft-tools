@@ -5,7 +5,7 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 file(GLOB SOURCES "*.c")
 file(GLOB HEADERS "*.h")
 
-set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -gdwarf -pipe -Wall -Wextra -Wno-error=unused-parameter -fdata-sections -ffunction-sections -Wl,--gc-sections")
+set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -O1 -fno-plt -pipe -Wall -Wextra -Wno-error=unused-parameter -fdata-sections -ffunction-sections -Wl,--gc-sections")
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
 set(CMAKE_C_FLAGS_RELEASE "-Ofast -DNDEBUG")
 
